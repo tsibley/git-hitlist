@@ -19,7 +19,7 @@ while (<$diff>) {
         next unless %line;
         chomp;
         push @hitlist, "$file{$1}:$line{$1}:$_";
-        %file = %line = ();
+        %line = ();
     }
 }
 close $diff;
