@@ -4,8 +4,45 @@ use warnings;
 use open qw/ :std :encoding(UTF-8) /;
 use autodie;
 use File::Temp 'tempfile';
+use Getopt::Long;
 
-open my $diff, "-|", qw(git diff -U0), @ARGV;
+sub usage {
+    return <<USAGE;
+git-hitlist [--cached]
+git-hitlist <commit> [<commit>]
+
+Open vim with all the files touched by the unstaged changes, staged changes
+(with --cached), or the specified commit.  If two commits are specified, the
+diff of the two will be used.  The quickfix list is populated with the first
+line of each patch hunk for easier jumping around.
+
+--cached    Use staged changes instead of unstaged changes
+USAGE
+}
+
+my (@opts, $use_staged);
+GetOptions(
+    'cached'    => \$use_staged,
+    'help'      => sub { print usage(); exit 0 },
+) or die usage();
+
+if ($use_staged) {
+    if (@ARGV) {
+        warn "Commit not allowed when --cached is specified.\n";
+        die usage();
+    }
+    push @opts, "--cached";
+}
+elsif (@ARGV) {
+    open my $revparse, "-|", qw(git rev-parse --revs-only), @ARGV;
+    @opts = map { chomp; $_ } <$revparse>;
+
+    # Turn a single commit into a range of one.
+    unshift @opts, "$opts[0]~"
+        if @opts == 1;
+}
+
+open my $diff, "-|", qw(git diff -U0), @opts;
 
 my (@hitlist, %file, %line);
 while (<$diff>) {
@@ -25,7 +62,9 @@ while (<$diff>) {
 close $diff;
 
 unless (@hitlist) {
-    warn "Nothing to whack.  (Perhaps you meant to use --cached?)\n";
+    warn "Nothing to whack.",
+         ($use_staged ? "" : " (Perhaps you meant to use --cached?)"),
+         "\n";
     exit;
 }
 
