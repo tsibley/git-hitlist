@@ -72,5 +72,9 @@ my ($tmpfh, $tmpfn) = tempfile();
 print { $tmpfh } "$_\n" for @hitlist;
 close $tmpfh;
 
+# git-diff paths are always relative to the top-level of the clone
+chomp( my $gitcd = `git rev-parse --show-cdup` );
+chdir "./$gitcd";
+
 system "vim", "-q", $tmpfn;
 unlink $tmpfn;
