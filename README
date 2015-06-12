@@ -1,9 +1,12 @@
-git-hitlist [--cached]
-git-hitlist <commit> [<commit>]
+git-hitlist [--cached] [paths]
+git-hitlist <commit> [<commit>] [paths]
 
 Open vim with all the files touched by the unstaged changes, staged changes
 (with --cached), or the specified commit.  If two commits are specified, the
 diff of the two will be used.  The quickfix list is populated with the first
 line of each patch hunk for easier jumping around.
+
+If any paths are specified, changed hunks are limited to those touching the
+specified paths.
 
 --cached    Use staged changes instead of unstaged changes
