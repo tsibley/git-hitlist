@@ -51,7 +51,7 @@ elsif (@revs) {
         if @revs == 1;
 }
 
-open my $diff, "-|", qw(git diff -U0), @opts, @revs, @files;
+open my $diff, "-|", qw(git diff --no-ext-diff -U0), @opts, @revs, @files;
 
 my (@hitlist, %file, %line);
 while (<$diff>) {
