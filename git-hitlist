@@ -8,18 +8,20 @@ use Getopt::Long;
 
 sub usage {
     return <<USAGE;
-git-hitlist [--cached] [paths]
+git-hitlist [--staged] [paths]
 git-hitlist <commit> [<commit>] [paths]
 
 Open vim with all the files touched by the unstaged changes, staged changes
-(with --cached), or the specified commit.  If two commits are specified, the
-diff of the two will be used.  The quickfix list is populated with the first
-line of each patch hunk for easier jumping around.
+(with --staged), or the specified commit.  If two commits are
+specified, the diff of the two will be used.  The quickfix list is populated
+with the first line of each patch hunk for easier jumping around.
 
 If any paths are specified, changed hunks are limited to those touching the
 specified paths.
 
---cached    Use staged changes instead of unstaged changes
+--staged    Use staged changes instead of unstaged changes
+--cached    Ditto
+--help      Show this help
 USAGE
 }
 
@@ -31,8 +33,8 @@ sub revparse {
 
 my (@opts, $use_staged);
 GetOptions(
-    'cached'    => \$use_staged,
-    'help'      => sub { print usage(); exit 0 },
+    'cached|staged' => \$use_staged,
+    'help'          => sub { print usage(); exit 0 },
 ) or die usage();
 
 my @revs  = revparse("--revs-only", @ARGV);
@@ -40,7 +42,7 @@ my @files = revparse("--no-revs", "--no-flags", @ARGV);
 
 if ($use_staged) {
     if (@revs) {
-        warn "Commit not allowed when --cached is specified.\n\n";
+        warn "Commit not allowed when --staged is specified.\n\n";
         die usage();
     }
     push @opts, "--cached";
@@ -72,7 +74,7 @@ close $diff;
 
 unless (@hitlist) {
     warn "Nothing to whack.",
-         ($use_staged ? "" : " (Perhaps you meant to use --cached?)"),
+         ($use_staged ? "" : " (Perhaps you meant to use --staged?)"),
          "\n";
     exit;
 }
