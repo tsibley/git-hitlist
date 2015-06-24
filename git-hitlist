@@ -25,11 +25,17 @@ specified paths.
 USAGE
 }
 
-sub revparse {
-    open my $revparse, "-|", qw(git rev-parse), @_;
-    my @lines = map { chomp; $_ } <$revparse>;
-    return @lines[0 .. $#lines];
+sub run_command {
+    open my $cmd, "-|", @_;
+    my @lines = map { chomp; $_ } <$cmd>;
+    return @lines;
 }
+
+sub revparse { run_command("git", "rev-parse", @_) }
+sub diff     { run_command("git", "diff", "--no-ext-diff", @_) }
+
+sub dirty_wc    { diff("--name-status") }
+sub dirty_stage { diff("--name-status", "--cached") }
 
 my (@opts, $use_staged);
 GetOptions(
@@ -39,6 +45,8 @@ GetOptions(
 
 my @revs  = revparse("--revs-only", @ARGV);
 my @files = revparse("--no-revs", "--no-flags", @ARGV);
+
+$use_staged //= (not @revs and not dirty_wc() and dirty_stage());
 
 if ($use_staged) {
     if (@revs) {
@@ -74,7 +82,7 @@ close $diff;
 
 unless (@hitlist) {
     warn "Nothing to whack.",
-         ($use_staged ? "" : " (Perhaps you meant to use --staged?)"),
+         (($use_staged or not dirty_stage()) ? "" : " (Perhaps you meant to use --staged?)"),
          "\n";
     exit;
 }
@@ -84,7 +92,7 @@ print { $tmpfh } "$_\n" for @hitlist;
 close $tmpfh;
 
 # git-diff paths are always relative to the top-level of the clone
-my $gitcd = revparse("--show-cdup");
+my ($gitcd) = revparse("--show-cdup");
 chdir "./$gitcd";
 
 system "vim", "-q", $tmpfn;
